@@ -39,3 +39,25 @@ share/python-wheels/
 logs/
 tmp/
 temp/
+
+# --- Model artifacts / experiment runs ---
+models/
+checkpoints/
+artifacts/
+mlruns/
+wandb/
+
+# --- Secrets & config ---
+.env
+.env.*
+*.pem
+*.key
+*.crt
+*secrets*
+
+# --- Editors / IDEs / OS ---
+.vscode/
+.idea/
+*.code-workspace
+.DS_Store
+Thumbs.db
