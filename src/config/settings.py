@@ -96,3 +96,4 @@ def update_settings(**kwargs) -> Settings:
     settings = Settings(**current_dict)
     return settings
 
+

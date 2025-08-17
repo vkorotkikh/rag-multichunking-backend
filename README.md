@@ -7,7 +7,11 @@ A comprehensive, production-ready RAG (Retrieval-Augmented Generation) backend s
 ### Chunking Strategies
 - **Fixed Chunking**: Simple character-based chunking with configurable size and overlap
 - **Paragraph Chunking**: Respects natural paragraph boundaries for better semantic coherence
-- **Semantic Chunking**: Uses sentence embeddings to group semantically similar content
+- **Semantic Chunking**: Advanced embedding-based chunking using SentenceTransformer models
+  - 🧠 Uses pre-trained transformer models to understand semantic meaning
+  - 📊 Supports multiple model options (MiniLM, MPNet, multilingual models)
+  - 🎯 Groups sentences by similarity rather than arbitrary boundaries
+  - ⚙️ Configurable similarity thresholds and model selection
 - **Recursive Chunking**: Hierarchical splitting using multiple separators for optimal boundaries
 
 ### Vector Stores
@@ -234,6 +238,73 @@ update_settings(
 | Recursive | ⭐⭐⭐ | ⭐⭐⭐⭐ | General purpose, balanced |
 | Semantic | ⭐⭐ | ⭐⭐⭐⭐⭐ | High-quality requirements |
 
+## 🧠 Semantic Chunking Deep Dive
+
+### What is Semantic Chunking?
+
+Semantic chunking uses advanced transformer-based embedding models to understand the meaning of text and group semantically similar sentences together, rather than splitting based on character count or structural markers.
+
+### How It Works
+
+1. **Sentence Segmentation**: Text is split into individual sentences
+2. **Embedding Generation**: Each sentence is converted to a high-dimensional vector using SentenceTransformer
+3. **Similarity Calculation**: Cosine similarity is computed between all sentence pairs using sklearn
+4. **Semantic Grouping**: Sentences with similarity above threshold are grouped together
+5. **Size Management**: Groups respect chunk size constraints while preserving semantic coherence
+
+### Supported Embedding Models
+
+#### Lightweight Models (Fast)
+- `all-MiniLM-L6-v2` (default): 384-dim, 22M params - balanced speed/quality
+- `all-MiniLM-L12-v2`: 384-dim, 33M params - better quality
+
+#### High-Quality Models  
+- `all-mpnet-base-v2`: 768-dim, 109M params - excellent general-purpose
+- `paraphrase-mpnet-base-v2`: 768-dim, 109M params - paraphrase detection
+
+#### Multilingual Models
+- `paraphrase-multilingual-MiniLM-L12-v2`: 384-dim, 50+ languages
+- `paraphrase-multilingual-mpnet-base-v2`: 768-dim, high-quality multilingual
+
+#### Specialized Models
+- `msmarco-distilbert-base-v4`: 768-dim, optimized for search/retrieval
+- `multi-qa-mpnet-base-dot-v1`: 768-dim, question-answering optimized
+
+### Configuration Options
+
+```python
+# Fast, lightweight semantic chunking
+chunker = SemanticChunker(
+    model_name="all-MiniLM-L6-v2",
+    similarity_threshold=0.75,  # 0.0-1.0, higher = stricter grouping
+    chunk_size=800,
+    min_sentences_per_chunk=2
+)
+
+# High-quality semantic chunking
+chunker = SemanticChunker(
+    model_name="all-mpnet-base-v2",
+    similarity_threshold=0.8,
+    chunk_size=1200
+)
+
+# Multilingual support
+chunker = SemanticChunker(
+    model_name="paraphrase-multilingual-MiniLM-L12-v2",
+    similarity_threshold=0.7
+)
+```
+
+### Model Selection Guide
+
+**Choose based on your requirements:**
+
+- **Speed Priority**: `all-MiniLM-L6-v2` - fastest, good quality
+- **Quality Priority**: `all-mpnet-base-v2` - highest quality English
+- **Multilingual**: `paraphrase-multilingual-MiniLM-L12-v2` - 50+ languages
+- **Search/Retrieval**: `msmarco-distilbert-base-v4` - optimized for RAG
+- **Question-Answering**: `multi-qa-mpnet-base-dot-v1` - QA tasks
+
 ### Vector Store Comparison
 
 | Feature | Pinecone | Weaviate |
@@ -245,17 +316,23 @@ update_settings(
 
 ## 🧪 Testing
 
-Run the example script to test your setup:
+Run the example scripts to test your setup:
 
 ```bash
+# General RAG pipeline examples
 python example_usage.py
+
+# Detailed semantic chunking demonstration
+python semantic_chunking_demo.py
 ```
 
-The example demonstrates:
+The examples demonstrate:
 - Document indexing with different chunking strategies
 - Query processing and response generation
 - Reranking comparisons
 - Metadata filtering
+- **Semantic chunking with different models and configurations**
+- **Embedding model comparison and performance analysis**
 
 ## 🔍 Monitoring and Debugging
 
