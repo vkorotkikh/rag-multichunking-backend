@@ -1,0 +1,41 @@
+# RAG Multi-Chunking Backend Environment Configuration
+# Copy this file to .env and fill in your actual values
+
+# OpenAI Configuration
+OPENAI__API_KEY=your_openai_api_key_here
+OPENAI__MODEL=o3-mini
+OPENAI__TEMPERATURE=0.1
+OPENAI__MAX_TOKENS=2000
+OPENAI__EMBEDDING_MODEL=text-embedding-3-large
+
+# Pinecone Configuration
+PINECONE__API_KEY=your_pinecone_api_key_here
+PINECONE__ENVIRONMENT=your_pinecone_environment
+PINECONE__INDEX_NAME=rag-documents
+PINECONE__DIMENSION=3072
+PINECONE__METRIC=cosine
+
+# Weaviate Configuration
+WEAVIATE__URL=https://your-weaviate-instance.weaviate.network
+WEAVIATE__API_KEY=your_weaviate_api_key_here
+WEAVIATE__CLASS_NAME=Document
+
+# Chunking Configuration
+CHUNKING__CHUNK_SIZE=1000
+CHUNKING__CHUNK_OVERLAP=200
+
+# Reranker Configuration
+RERANKER__MODEL_NAME=rerank-english-v3.0
+RERANKER__TOP_K=10
+RERANKER__RELEVANCE_THRESHOLD=0.0
+
+# Application Settings
+VECTOR_STORE=pinecone  # pinecone or weaviate
+CHUNKING_STRATEGY=recursive  # fixed, paragraph, semantic, recursive
+LOG_LEVEL=INFO
+MAX_CONCURRENT_REQUESTS=10
+
+# Optional: Cohere API Key for reranking
+COHERE_API_KEY=your_cohere_api_key_here
+
+
