@@ -1,0 +1,41 @@
+# --- Python bytecode / caches ---
+__pycache__/
+*.py[cod]
+*$py.class
+.cache/
+
+# --- Virtual environments ---
+.venv/
+venv/
+env/
+.conda/
+conda-meta/
+
+# --- Testing / coverage / typing ---
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+.mypy_cache/
+.pytype/
+.pyre/
+
+# --- Build / packaging ---
+build/
+dist/
+wheels/
+pip-wheel-metadata/
+*.egg-info/
+.eggs/
+*.egg
+sdist/
+share/python-wheels/
+
+# --- Logs / temp ---
+*.log
+logs/
+tmp/
+temp/
