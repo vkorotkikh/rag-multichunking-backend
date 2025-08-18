@@ -216,3 +216,160 @@ def apply_overlap(chunks: List[DocumentChunk], chunk_overlap: int) -> List[Docum
             metadata=curr.metadata,
         ))
     return out
+
+# ------------------------------------------------------------
+# 5. Utilities
+# ------------------------------------------------------------
+
+def recommended_model() -> Dict[str, List[str]]:
+    return {
+        "lightweight": ["all-MiniLM-L6-v2", "all-MiniLM-L12-v2"],
+        "balanced": ["all-mpnet-base-v2"],
+        "retrieval/qa": ["msmarco-distilbert-base-v4", "multi-qa-mpnet-base-dot-v1"],
+        "multilingual": ["paraphrase-multilingual-MiniLM-L12-v2", "paraphrase-multilingual-mpnet-base-v2"],
+    }
+
+# ------------------------------------------------------------
+# 6. Alternative Engines 
+# ------------------------------------------------------------
+
+def semantic_chunk_langchain(
+    text:str,
+    *,
+    model_name: str = "sentence-transformers/msmarco-distilbert-base-v4",
+    breakpoint_type: str = "percentile",
+    breakpoint_amount: float = 0.5,
+    buffer_size: int = 1,
+    min_chunk_size: int = 0,
+    chunk_overlap: int = 200,
+    ) -> List[DocumentChunk]:
+    """Use LangChain's SemanticChunker with a SentenceTransformer-backed embedder.
+    Requires: langchain-experimental, langchain-community, sentence-transformers.
+    """
+    try:
+        from langchain_experimental.text_splitter import SemanticChunker
+        from langchain_community.embeddings import HuggingFaceEmbeddings
+    except Exception as e:
+        raise RuntimeError(
+            "LangChain SemanticChunker is not available. "
+            "Install: pip install langchain-experimental langchain-community"
+        ) from e
+    embed = HuggingFaceEmbeddings(model_name = model_name)
+    splitter = SemanticChunker(embeddings=embed,
+                               breakpoint_threshold=breakpoint_amount,
+                               chunk_size=chunk_size,
+                               chunk_overlap=chunk_overlap,
+                               buffer_size=buffer_size,
+                               min_chunk_size=(min_chunk_size if min_chunk_size > 0 else None),
+                               )
+    pieces: List[str] = splitter.split_text(text)
+    
+    # Map back to DocumentChunk list using sequential search to get char ranges
+    chunks: List[DocumentChunk] = []
+    cursor = 0
+    for i, t in enumerate(pieces):
+        start = text.find(t, cursor)
+        if start < 0:
+            start = cursor
+        end = start + len(t)
+        cursor = end
+        chunks.append(DocumentChunk(doc_id=doc_id, chunk_index=i, content=t, start_char=start, end_char=end, metadata={**meta}))
+
+    if chunks_overlap > 0 and len(chunks) > 1:
+        chunks = apply_overlap(chunks, chunks_overlap)
+    return chunks
+    
+# ---------------------------- CLI --------------------------------------------
+
+def _read_stdin() -> str:
+    if sys.stdin and not sys.stdin.isatty():
+        return sys.stdin.read()
+    return ""
+
+def main():
+    ap = argparse.ArgumentParser(description="Semantic chunking (functional)")
+    ap.add_argument("--file", type=str, help="Input text file", default=None)
+    ap.add_argument("--model", type=str, default="all-MiniLM-L6-v2")
+    ap.add_argument("--engine", type=str, choices=["native", "langchain", "llamaindex"], default="native",
+                    help="Chunking engine: native (this script), langchain, or llamaindex")
+
+    # Native engine params
+    ap.add_argument("--chunk-size", type=int, default=1000)
+    ap.add_argument("--overlap", type=int, default=200)
+    ap.add_argument("--threshold", type=float, default=0.7)
+    ap.add_argument("--min-sentences", type=int, default=2)
+
+    # LangChain params
+    ap.add_argument("--breakpoint-type", type=str, default="percentile",
+                    help="percentile | stdev | gradient | interquartile")
+    ap.add_argument("--breakpoint", type=int, default=95, help="Threshold amount for breakpoint-type")
+    ap.add_argument("--buffer-size", type=int, default=1)
+    ap.add_argument("--min-chars", type=int, default=0, help="Minimum chars per chunk (LangChain only)")
+
+    # Utility flags
+    ap.add_argument("--print", dest="do_print", action="store_true", help="Print chunk contents")
+    ap.add_argument("--list-models", action="store_true", help="Show recommended models")
+    args = ap.parse_args()
+
+    if args.list_models:
+        print("Recommended models:")
+        for k, vs in recommended_models().items():
+            print(f"  {k}: {', '.join(vs)}")
+        return
+
+    text = ""
+    if args.file:
+        with open(args.file, "r", encoding="utf-8") as f:
+            text = f.read()
+    else:
+        text = _read_stdin()
+
+    if not text.strip():
+        print("No input text. Provide --file or pipe text via stdin.")
+        return
+
+    if args.engine == "native":
+        chunks = semantic_chunk(
+            text,
+            model_name=args.model,
+            chunk_size=args.chunk_size,
+            chunk_overlap=args.overlap,
+            similarity_threshold=args.threshold,
+            min_sentences_per_chunk=args.min_sentences,
+        )
+    elif args.engine == "langchain":
+        chunks = semantic_chunk_langchain(
+            text,
+            model_name=args.model,
+            breakpoint_type=args.breakpoint_type,
+            breakpoint_amount=args.breakpoint,
+            buffer_size=args.buffer_size,
+            min_chunk_size=args.min_chars,
+            chunk_overlap=args.overlap,
+        )
+    else:  # llamaindex
+        chunks = semantic_chunk_llamaindex(
+            text,
+            model_name=args.model,
+            breakpoint_percentile_threshold=args.breakpoint,
+            buffer_size=args.buffer_size,
+            chunk_overlap=args.overlap,
+        )
+
+    print(f"[semantic] Produced {len(chunks)} chunks
+")
+    for c in chunks:
+        preview = (c.content[:120] + "…") if len(c.content) > 120 else c.content
+        print(f"#{c.chunk_index:02d} chars[{c.start_char}:{c.end_char}] len={len(c.content)}
+  {preview}
+")
+
+    if args.do_print:
+        for c in chunks:
+            print("
+" + "-"*80)
+            print(f"CHUNK #{c.chunk_index} ({len(c.content)} chars)")
+            print(c.content)
+
+if __name__ == "__main__":
+    main()
