@@ -108,8 +108,9 @@ def cosine_sim_matrix(normed_embeddings: np.ndarray) -> np.ndarray:
         return np.empty((0, 0), dtype=np.float32)
     return normed_embeddings @ normed_embeddings.T
 
-# ---------------------------- grouping logic ----------------------------------
-
+# ------------------------------------------------------------
+# 4. Grouping Logic
+# ------------------------------------------------------------
 def group_sentences_semantically(
     sentences: List[str],
     normed_embeddings: np.ndarray,
@@ -153,3 +154,65 @@ def group_sentences_semantically(
             groups.append(current)
 
     return groups
+
+# ---------------------------- chunk assembly ----------------------------------
+
+def index_of_sentence(text: str, sentence: str, start_at: int) -> int:
+    idx = text.find(sentence, start_at)
+    if idx >= 0:
+        return idx
+    # fallback: crude search without start hint
+    return text.find(sentence)
+
+def create_chunks_from_groups(
+    groups: List[List[int]],
+    sentences: List[str],
+    original_text: str,
+    doc: Document,
+    chunk_overlap: int,
+) -> List[DocumentChunk]:
+    chunks: List[DocumentChunk] = []
+    cursor = 0  # where to start searching for the next group's first sentence
+
+    for ci, idxs in enumerate(groups):
+        if not idxs:
+            continue
+        group_sents = [sentences[k] for k in idxs]
+        chunk_text = " ".join(group_sents)
+
+        start = index_of_sentence(original_text, group_sents[0], cursor)
+        if start < 0:
+            start = cursor
+        end = min(len(original_text), start + len(chunk_text))
+        cursor = end  # advance cursor for next search
+
+        chunks.append(DocumentChunk(
+            doc_id=doc.id,
+            chunk_index=ci,
+            content=chunk_text,
+            start_char=start,
+            end_char=end,
+            metadata={**doc.metadata}
+        ))
+
+    if chunk_overlap > 0 and len(chunks) > 1:
+        chunks = apply_overlap(chunks, chunk_overlap)
+
+    return chunks
+
+def apply_overlap(chunks: List[DocumentChunk], chunk_overlap: int) -> List[DocumentChunk]:
+    out = [chunks[0]]
+    for i in range(1, len(chunks)):
+        prev = out[-1]
+        curr = chunks[i]
+        overlap_text = prev.content[-chunk_overlap:]
+        merged = (overlap_text + " " + curr.content).strip()
+        out.append(DocumentChunk(
+            doc_id=curr.doc_id,
+            chunk_index=curr.chunk_index,
+            content=merged,
+            start_char=curr.start_char,  # keep original approx
+            end_char=curr.end_char,
+            metadata=curr.metadata,
+        ))
+    return out
