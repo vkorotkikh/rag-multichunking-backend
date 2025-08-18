@@ -42,8 +42,21 @@ class Document:
 
 @dataclass
 class DocumentChunk:
-    id: str
+    doc_id: str
+    chunk_index: str
     content: str
+    start_char: int
+    end_char: int
     metadata: Dict[str, Any] = field(default_factory=dict)
-    chunk_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     
+# ------------------------------------------------------------
+# 2. Sentence Splitting
+# ------------------------------------------------------------
+
+_SENTENCE_PATTERN = re.compile(r"(?<=[.!?])\s+(?=[A-Z])")
+
+def split_into_sentences(text: str) -> List[str]:
+    """
+    Split text into sentences using regex.
+    """
+    return re.split(r'(?<=[.!?])\s+(?=[A-Z])', text)
