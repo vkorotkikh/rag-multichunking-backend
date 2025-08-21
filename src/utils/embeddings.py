@@ -7,6 +7,43 @@ from openai import OpenAI, AsyncOpenAI
 from ..config.settings import get_settings
 from ..models.document import DocumentChunk
 
+# TODO: Add support for other embedding providers
+
+class OpenAIEmbeddingService:
+    """Service for generating embeddings using OpenAI."""
+
+    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
+        settings = get_settings()
+
+        self.api_key = api_key or settings.openai.api_key
+        self.model = model or settings.openai.embedding_model
+        
+        # Initialize both sync and async clients
+        self.client = OpenAI(api_key=self.api_key)
+        self.async_client = AsyncOpenAI(api_key=self.api_key)
+        
+        # Is there anything else that I need to do here?
+        # adding chunk size and batch size for openai embedding
+        self.chunk_size = settings.openai.chunk_size
+        self.batch_size = settings.openai.batch_size
+        
+    
+    def generate_embedding(self, text: str) -> List[float]:
+        """
+        Generate embedding for a single text synchronously.
+
+        Args:
+            text: Text to embed
+            
+        Returns:
+            Embedding vector
+        """
+
+        try:
+            response = self.client.embeddings.create(
+                model=self.model,
+                input=text.replace("\n", " ")  # OpenAI recommends replacing newlines
+            )
 
 class EmbeddingService:
     """Service for generating embeddings using OpenAI."""

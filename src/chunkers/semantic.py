@@ -18,11 +18,13 @@ improve retrieval quality in RAG systems.
 import re
 from typing import List, Optional, Tuple
 import numpy as np
-from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
+# from sentence_transformers import SentenceTransformer
+# from sklearn.metrics.pairwise import cosine_similarity
 from .base import BaseChunker
 from ..models.document import Document, DocumentChunk
 
+from sentence_transformers import SentenceTransformer # used to load embedding models for semantic chunking
+# sentencetransformer used to load embedding models used for semantic chunking
 
 class SemanticChunker(BaseChunker):
     """
@@ -188,8 +190,13 @@ class SemanticChunker(BaseChunker):
     def chunk(self, document: Document) -> List[DocumentChunk]:
         """
         Chunk document using semantic similarity between sentences.
+        Chunk document using semantic similarity between sentences.
         
         This method implements the complete semantic chunking pipeline:
+        This method implements the complete semantic chunking pipeline:
+        
+        1. **Text Preprocessing**: Split document into individual sentences
+        2. **Embedding Generation**: Convert each sentence to vector
         
         1. **Text Preprocessing**: Split document into individual sentences
         2. **Embedding Generation**: Convert each sentence to vector representation using SentenceTransformer
@@ -578,5 +585,3 @@ class SemanticChunker(BaseChunker):
             
             start = max(start + 1, end - self.chunk_overlap)
         
-        return chunks
-
