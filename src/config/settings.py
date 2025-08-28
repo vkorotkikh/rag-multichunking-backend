@@ -8,11 +8,13 @@ from pydantic_settings import BaseSettings
 
 class OpenAIConfig(BaseModel):
     """OpenAI configuration."""
-    api_key: str = Field(..., description="OpenAI API key")
+    api_key: Optional[str] = Field(default=None, description="OpenAI API key")
     model: str = Field(default="o3-mini", description="OpenAI model to use")
     temperature: float = Field(default=0.1, ge=0.0, le=2.0)
     max_tokens: Optional[int] = Field(default=None, ge=1)
     embedding_model: str = Field(default="text-embedding-3-large", description="Embedding model")
+    chunk_size: int = Field(default=8191, ge=1, description="Max chunk size for OpenAI embeddings")
+    batch_size: int = Field(default=100, ge=1, description="Batch size for OpenAI embeddings")
 
 
 class PineconeConfig(BaseModel):
@@ -41,6 +43,21 @@ class ChunkingConfig(BaseModel):
     )
 
 
+class EmbeddingConfig(BaseModel):
+    """Embedding configuration."""
+    provider: Literal["openai", "sentence-transformers", "huggingface", "bge"] = Field(
+        default="openai", description="Embedding provider"
+    )
+    model_name: str = Field(
+        default="all-MiniLM-L6-v2", description="Local embedding model name"
+    )
+    device: str = Field(default="cpu", description="Device for local models (cpu/cuda)")
+    normalize_embeddings: bool = Field(default=True, description="Normalize embeddings")
+    batch_size: int = Field(default=32, ge=1, description="Batch size for local models")
+    max_length: int = Field(default=512, ge=1, description="Max sequence length")
+    trust_remote_code: bool = Field(default=False, description="Allow remote code execution for HF models")
+
+
 class RerankerConfig(BaseModel):
     """Reranker configuration."""
     model_name: str = Field(default="rerank-english-v3.0", description="Cohere reranker model")
@@ -52,11 +69,12 @@ class Settings(BaseSettings):
     """Main application settings."""
     
     # API configurations
-    openai: OpenAIConfig
+    openai: Optional[OpenAIConfig] = None
     pinecone: Optional[PineconeConfig] = None
     weaviate: Optional[WeaviateConfig] = None
     
     # Processing configurations
+    embedding: EmbeddingConfig = Field(default_factory=EmbeddingConfig)
     chunking: ChunkingConfig = Field(default_factory=ChunkingConfig)
     reranker: RerankerConfig = Field(default_factory=RerankerConfig)
     
