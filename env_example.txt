@@ -7,6 +7,8 @@ OPENAI__MODEL=o3-mini
 OPENAI__TEMPERATURE=0.1
 OPENAI__MAX_TOKENS=2000
 OPENAI__EMBEDDING_MODEL=text-embedding-3-large
+OPENAI__CHUNK_SIZE=8191
+OPENAI__BATCH_SIZE=100
 
 # Pinecone Configuration
 PINECONE__API_KEY=your_pinecone_api_key_here
@@ -23,6 +25,15 @@ WEAVIATE__CLASS_NAME=Document
 # Chunking Configuration
 CHUNKING__CHUNK_SIZE=1000
 CHUNKING__CHUNK_OVERLAP=200
+
+# Embedding Configuration (for local models)
+EMBEDDING__PROVIDER=openai  # openai, sentence-transformers, huggingface, bge
+EMBEDDING__MODEL_NAME=all-MiniLM-L6-v2  # For local models
+EMBEDDING__DEVICE=cpu  # cpu or cuda
+EMBEDDING__NORMALIZE_EMBEDDINGS=true
+EMBEDDING__BATCH_SIZE=32
+EMBEDDING__MAX_LENGTH=512
+EMBEDDING__TRUST_REMOTE_CODE=false
 
 # Reranker Configuration
 RERANKER__MODEL_NAME=rerank-english-v3.0
